@@ -8,6 +8,7 @@
 #include <fuchsia/ui/scenic/cpp/fidl.h>
 #include <fuchsia/ui/views/cpp/fidl.h>
 #include <lib/fit/function.h>
+#include <lib/ui/scenic/cpp/view_ref_pair.h>
 
 #include "flutter/flow/compositor_context.h"
 #include "flutter/flow/embedded_views.h"
@@ -22,6 +23,7 @@ class CompositorContext final : public flutter::CompositorContext {
  public:
   CompositorContext(std::string debug_label,
                     fuchsia::ui::views::ViewToken view_token,
+                    scenic::ViewRefPair view_ref_pair,
                     fidl::InterfaceHandle<fuchsia::ui::scenic::Session> session,
                     fml::closure session_error_callback,
                     zx_handle_t vsync_event_handle);
@@ -33,9 +35,16 @@ class CompositorContext final : public flutter::CompositorContext {
                                float height_change_factor);
 
   void OnWireframeEnabled(bool enabled);
+  void OnCreateView(int64_t view_id, bool hit_testable, bool focusable);
+  void OnDestroyView(int64_t view_id);
+
+  flutter::ExternalViewEmbedder* GetViewEmbedder() {
+    return &session_connection_.scene_update_context();
+  }
 
  private:
   const std::string debug_label_;
+  scenic::ViewRefPair view_ref_pair_;
   SessionConnection session_connection_;
 
   // |flutter::CompositorContext|
@@ -45,7 +54,8 @@ class CompositorContext final : public flutter::CompositorContext {
       flutter::ExternalViewEmbedder* view_embedder,
       const SkMatrix& root_surface_transformation,
       bool instrumentation_enabled,
-      fml::RefPtr<fml::GpuThreadMerger> gpu_thread_merger) override;
+      bool surface_supports_readback,
+      fml::RefPtr<fml::RasterThreadMerger> raster_thread_merger) override;
 
   FML_DISALLOW_COPY_AND_ASSIGN(CompositorContext);
 };

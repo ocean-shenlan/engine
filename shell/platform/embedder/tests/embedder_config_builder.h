@@ -31,25 +31,29 @@ using UniqueEngine = fml::UniqueObject<FlutterEngine, UniqueEngineTraits>;
 class EmbedderConfigBuilder {
  public:
   enum class InitializationPreference {
-    kInitialize,
+    kSnapshotsInitialize,
+    kAOTDataInitialize,
+    kMultiAOTInitialize,
     kNoInitialize,
   };
 
   EmbedderConfigBuilder(EmbedderTestContext& context,
                         InitializationPreference preference =
-                            InitializationPreference::kInitialize);
+                            InitializationPreference::kSnapshotsInitialize);
 
   ~EmbedderConfigBuilder();
 
   FlutterProjectArgs& GetProjectArgs();
 
-  void SetSoftwareRendererConfig();
+  void SetSoftwareRendererConfig(SkISize surface_size = SkISize::Make(1, 1));
 
-  void SetOpenGLRendererConfig();
+  void SetOpenGLRendererConfig(SkISize surface_size);
 
   void SetAssetsPath();
 
   void SetSnapshots();
+
+  void SetAOTDataElf();
 
   void SetIsolateCreateCallbackHook();
 
@@ -61,14 +65,18 @@ class EmbedderConfigBuilder {
 
   void SetPlatformTaskRunner(const FlutterTaskRunnerDescription* runner);
 
+  void SetRenderTaskRunner(const FlutterTaskRunnerDescription* runner);
+
   void SetPlatformMessageCallback(
-      std::function<void(const FlutterPlatformMessage*)> callback);
+      const std::function<void(const FlutterPlatformMessage*)>& callback);
 
   void SetCompositor();
 
   FlutterCompositor& GetCompositor();
 
-  UniqueEngine LaunchEngine();
+  UniqueEngine LaunchEngine() const;
+
+  UniqueEngine InitializeEngine() const;
 
  private:
   EmbedderTestContext& context_;
@@ -80,6 +88,8 @@ class EmbedderConfigBuilder {
   FlutterCustomTaskRunners custom_task_runners_ = {};
   FlutterCompositor compositor_ = {};
   std::vector<std::string> command_line_arguments_;
+
+  UniqueEngine SetupEngine(bool run) const;
 
   FML_DISALLOW_COPY_AND_ASSIGN(EmbedderConfigBuilder);
 };

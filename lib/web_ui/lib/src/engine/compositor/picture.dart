@@ -5,7 +5,8 @@
 part of engine;
 
 class SkPicture implements ui.Picture {
-  final js.JsObject skPicture;
+  final js.JsObject? skPicture;
+  final ui.Rect? cullRect;
 
   SkPicture(this.skPicture, this.cullRect);
 
@@ -13,20 +14,12 @@ class SkPicture implements ui.Picture {
   int get approximateBytesUsed => 0;
 
   @override
-  final ui.Rect cullRect;
-
-  @override
   void dispose() {
     // TODO: implement dispose
   }
 
   @override
-  // TODO: implement recordingCanvas
-  RecordingCanvas get recordingCanvas => null;
-
-  @override
   Future<ui.Image> toImage(int width, int height) {
-    // TODO: implement toImage
-    return null;
+    throw UnsupportedError('Picture.toImage not yet implemented for CanvasKit and HTML');
   }
 }

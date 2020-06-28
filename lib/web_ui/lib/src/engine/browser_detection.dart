@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+
 part of engine;
 
 /// The HTML engine used by the current browser.
@@ -16,33 +17,57 @@ enum BrowserEngine {
   /// The engine that powers Firefox.
   firefox,
 
+  /// The engine that powers Edge.
+  edge,
+
+  /// The engine that powers Internet Explorer 11.
+  ie11,
+
   /// We were unable to detect the current browser engine.
   unknown,
 }
 
 /// Lazily initialized current browser engine.
-BrowserEngine _browserEngine;
+late final BrowserEngine _browserEngine = _detectBrowserEngine();
+
+/// Override the value of [browserEngine].
+///
+/// Setting this to `null` lets [browserEngine] detect the browser that the
+/// app is running on.
+///
+/// This is intended to be used for testing and debugging only.
+BrowserEngine? debugBrowserEngineOverride;
 
 /// Returns the [BrowserEngine] used by the current browser.
 ///
 /// This is used to implement browser-specific behavior.
-BrowserEngine get browserEngine => _browserEngine ??= _detectBrowserEngine();
+BrowserEngine get browserEngine {
+  return debugBrowserEngineOverride ?? _browserEngine;
+}
 
 BrowserEngine _detectBrowserEngine() {
   final String vendor = html.window.navigator.vendor;
+  final String agent = html.window.navigator.userAgent.toLowerCase();
   if (vendor == 'Google Inc.') {
     return BrowserEngine.blink;
   } else if (vendor == 'Apple Computer, Inc.') {
     return BrowserEngine.webkit;
-  } else if (vendor == '') {
+  } else if (agent.contains('edge/')) {
+    return BrowserEngine.edge;
+  } else if (agent.contains('Edg/')) {
+    // Chromium based Microsoft Edge has `Edg` in the user-agent.
+    // https://docs.microsoft.com/en-us/microsoft-edge/web-platform/user-agent-string
+    return BrowserEngine.blink;
+  } else if (agent.contains('trident/7.0')) {
+    return BrowserEngine.ie11;
+  } else if (vendor == '' && agent.contains('firefox')) {
     // An empty string means firefox:
     // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vendor
     return BrowserEngine.firefox;
   }
 
-  // Assume blink otherwise, but issue a warning.
+  // Assume unknown otherwise, but issue a warning.
   print('WARNING: failed to detect current browser engine.');
-
   return BrowserEngine.unknown;
 }
 
@@ -71,17 +96,27 @@ enum OperatingSystem {
 }
 
 /// Lazily initialized current operating system.
-OperatingSystem _operatingSystem;
+late final OperatingSystem _operatingSystem = _detectOperatingSystem();
 
 /// Returns the [OperatingSystem] the current browsers works on.
 ///
 /// This is used to implement operating system specific behavior such as
 /// soft keyboards.
-OperatingSystem get operatingSystem =>
-    _operatingSystem ??= _detectOperatingSystem();
+OperatingSystem get operatingSystem {
+  return debugOperatingSystemOverride ?? _operatingSystem;
+}
+
+/// Override the value of [operatingSystem].
+///
+/// Setting this to `null` lets [operatingSystem] detect the real OS that the
+/// app is running on.
+///
+/// This is intended to be used for testing and debugging only.
+OperatingSystem? debugOperatingSystemOverride;
 
 OperatingSystem _detectOperatingSystem() {
   final String platform = html.window.navigator.platform;
+  final String userAgent = html.window.navigator.userAgent;
 
   if (platform.startsWith('Mac')) {
     return OperatingSystem.macOs;
@@ -89,7 +124,10 @@ OperatingSystem _detectOperatingSystem() {
       platform.toLowerCase().contains('ipad') ||
       platform.toLowerCase().contains('ipod')) {
     return OperatingSystem.iOs;
-  } else if (platform.toLowerCase().contains('android')) {
+  } else if (userAgent.contains('Android')) {
+    // The Android OS reports itself as "Linux armv8l" in
+    // [html.window.navigator.platform]. So we have to check the user-agent to
+    // determine if the OS is Android or not.
     return OperatingSystem.android;
   } else if (platform.startsWith('Linux')) {
     return OperatingSystem.linux;
@@ -99,3 +137,25 @@ OperatingSystem _detectOperatingSystem() {
     return OperatingSystem.unknown;
   }
 }
+
+/// List of Operating Systems we know to be working on laptops/desktops.
+///
+/// These devices tend to behave differently on many core issues such as events,
+/// screen readers, input devices.
+const Set<OperatingSystem> _desktopOperatingSystems = {
+  OperatingSystem.macOs,
+  OperatingSystem.linux,
+  OperatingSystem.windows,
+};
+
+/// A flag to check if the current operating system is a laptop/desktop
+/// operating system.
+///
+/// See [_desktopOperatingSystems].
+bool get isDesktop => _desktopOperatingSystems.contains(operatingSystem);
+
+/// A flag to check if the current browser is running on a mobile device.
+///
+/// See [_desktopOperatingSystems].
+/// See [isDesktop].
+bool get isMobile => !isDesktop;

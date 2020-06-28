@@ -14,15 +14,14 @@ namespace flutter {
 class TransformLayer : public ContainerLayer {
  public:
   TransformLayer(const SkMatrix& transform);
-  ~TransformLayer() override;
 
   void Preroll(PrerollContext* context, const SkMatrix& matrix) override;
 
   void Paint(PaintContext& context) const override;
 
-#if defined(OS_FUCHSIA)
+#if defined(LEGACY_FUCHSIA_EMBEDDER)
   void UpdateScene(SceneUpdateContext& context) override;
-#endif  // defined(OS_FUCHSIA)
+#endif
 
  private:
   SkMatrix transform_;

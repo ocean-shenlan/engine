@@ -29,7 +29,7 @@ class Incrementable extends RoleManager {
   /// Disables the input [_element] when the gesture mode switches to
   /// [GestureMode.pointerEvents], and enables it when the mode switches back to
   /// [GestureMode.browserGestures].
-  GestureModeCallback _gestureModeListener;
+  GestureModeCallback? _gestureModeListener;
 
   /// Whether we forwarded a semantics action to the framework and awaiting an
   /// update.
@@ -52,11 +52,11 @@ class Incrementable extends RoleManager {
       final int newInputValue = int.parse(_element.value);
       if (newInputValue > _currentSurrogateValue) {
         _currentSurrogateValue += 1;
-        ui.window.onSemanticsAction(
+        window.invokeOnSemanticsAction(
             semanticsObject.id, ui.SemanticsAction.increase, null);
       } else if (newInputValue < _currentSurrogateValue) {
         _currentSurrogateValue -= 1;
-        ui.window.onSemanticsAction(
+        window.invokeOnSemanticsAction(
             semanticsObject.id, ui.SemanticsAction.decrease, null);
       }
     });
@@ -107,15 +107,15 @@ class Incrementable extends RoleManager {
     final String surrogateTextValue = '$_currentSurrogateValue';
     _element.value = surrogateTextValue;
     _element.setAttribute('aria-valuenow', surrogateTextValue);
-    _element.setAttribute('aria-valuetext', semanticsObject.value);
+    _element.setAttribute('aria-valuetext', semanticsObject.value!);
 
-    final bool canIncrease = semanticsObject.increasedValue != null;
+    final bool canIncrease = semanticsObject.increasedValue!.isNotEmpty;
     final String surrogateMaxTextValue =
         canIncrease ? '${_currentSurrogateValue + 1}' : surrogateTextValue;
     _element.max = surrogateMaxTextValue;
     _element.setAttribute('aria-valuemax', surrogateMaxTextValue);
 
-    final bool canDecrease = semanticsObject.decreasedValue != null;
+    final bool canDecrease = semanticsObject.decreasedValue!.isNotEmpty;
     final String surrogateMinTextValue =
         canDecrease ? '${_currentSurrogateValue - 1}' : surrogateTextValue;
     _element.min = surrogateMinTextValue;
